@@ -118,6 +118,23 @@
   .msg.ai .msg-bubble .scene-card { background:linear-gradient(135deg,rgba(253,242,248,0.9),rgba(245,243,255,0.9)); border:1px solid rgba(212,79,145,0.18); border-radius:12px; padding:10px 14px; margin:6px 0; }
   .msg.ai .msg-bubble .scene-title { font-weight:600; color:var(--pink-5); font-size:0.82rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
 
+  /* COPY BUTTON */
+  .msg-wrapper { display:flex; flex-direction:column; gap:6px; max-width:75%; }
+  .msg.user .msg-wrapper { align-items:flex-end; }
+  .msg.ai .msg-wrapper { align-items:flex-start; }
+  .copy-btn {
+    display:inline-flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,0.75); backdrop-filter:blur(8px);
+    border:1px solid rgba(212,79,145,0.2); border-radius:10px;
+    color:var(--text-light); font-family:'DM Sans',sans-serif;
+    font-size:0.72rem; font-weight:500; padding:4px 10px;
+    cursor:pointer; transition:all 0.18s;
+    opacity:0; pointer-events:none;
+  }
+  .msg.ai:hover .copy-btn, .copy-btn.visible { opacity:1; pointer-events:all; }
+  .copy-btn:hover { background:rgba(255,255,255,0.95); border-color:rgba(212,79,145,0.4); color:var(--pink-5); transform:translateY(-1px); }
+  .copy-btn.copied { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.3); color:#16a34a; }
+
   .typing-indicator { display:flex; gap:12px; align-items:flex-end; }
   .typing-dots { display:flex; gap:5px; padding:14px 18px; background:rgba(255,255,255,0.9); border:1px solid rgba(248,164,204,0.25); border-radius:18px; border-bottom-left-radius:5px; }
   .typing-dots span { width:7px; height:7px; border-radius:50%; background:linear-gradient(135deg,#f472b6,#c084fc); animation:bounce 1.2s ease infinite; }
@@ -237,13 +254,41 @@
     const win = document.getElementById('chatWindow');
     const empty = document.getElementById('emptyState');
     if (empty) empty.remove();
+
     const d = document.createElement('div'); d.className = 'msg ' + role;
     const av = document.createElement('div'); av.className = 'msg-avatar';
     av.textContent = role === 'user' ? '✦' : '💜';
+
+    const wrapper = document.createElement('div'); wrapper.className = 'msg-wrapper';
     const bub = document.createElement('div'); bub.className = 'msg-bubble';
     bub.innerHTML = role === 'ai' ? formatAI(text) : esc(text);
-    d.appendChild(av); d.appendChild(bub);
+    wrapper.appendChild(bub);
+
+    if (role === 'ai') {
+      const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn';
+      copyBtn.innerHTML = '📋 Copy';
+      copyBtn.onclick = () => copyText(text, copyBtn);
+      wrapper.appendChild(copyBtn);
+    }
+
+    d.appendChild(av); d.appendChild(wrapper);
     win.appendChild(d); win.scrollTop = win.scrollHeight;
+  }
+
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = '✅ Copied!';
+      btn.classList.add('copied', 'visible');
+      setTimeout(() => { btn.innerHTML = '📋 Copy'; btn.classList.remove('copied', 'visible'); }, 2000);
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      btn.innerHTML = '✅ Copied!';
+      btn.classList.add('copied', 'visible');
+      setTimeout(() => { btn.innerHTML = '📋 Copy'; btn.classList.remove('copied', 'visible'); }, 2000);
+    });
   }
 
   function esc(s) {
